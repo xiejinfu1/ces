@@ -1,0 +1,417 @@
+<template>
+	<view class="search1">
+		<view class="box1">
+			<image src="../../static/image/top-img.jpg" mode="heightFix"></image>
+		</view>
+		<view class="search-header">
+			<image src="../../static/image/zjt.png" @click="Back"></image>
+			<view class="search-content1">
+				<image src="../../static/image/search2.png"></image>
+				<input type="text" v-model="note.title" :focus="true" placeholder="请输入你要搜索的笔记" @input="search()">
+			</view>
+		</view>
+		<view class="search-select">
+			<view :class="['text1',index==0?' hover':'']" @click="updIndex(0)">默认排序</view>
+			<view :class="['text1',index==1?' hover':'']" @click="updIndex(1)">新发布</view>
+			<view :class="['text1',index==2?' hover':'']" @click="updIndex(2)">观看多</view>
+			<view :class="['text1',index==3?' hover':'']" @click="updIndex(3)">点赞多</view>
+			<view :class="['text1',index==4?' hover':'']" @click="updIndex(4)">收藏多</view>
+		</view>
+		<view style="height: 85vh;margin-top: 24rpx;">
+			<scroll-view :scroll-y="true" style="height: 100%;">
+				<view class="search-box1">
+					<view class="box-left" v-if="leftList.length>0">
+						<view class="content_body" v-for="(item,i) in leftList" :key="item.id"
+							@click="tiaozhuan(`/subpkg/note-detail/note-detail?noteid=${item.id}&index=${i}&data=leftList`)">
+							<view class="imgs">
+								<image class="imgs1" :src="item.images.length==0?img:item.images[0]"></image>
+								<!-- <image class="imgs2" src="../../static/image/shipin.png"></image> -->
+							</view>
+							<view class="text2">
+								<view class="content_body2">
+									<image style="width: 20rpx;height: 22rpx;" src="../../static/image/dz.png"></image>
+									<text>{{item.likes}}</text>
+									<image style="width: 24rpx;height: 22rpx;" src="../../static/image/xx.png">
+									</image>
+									<text>23.4万</text>
+									<view class="img3">
+										<image style="width: 22rpx;height: 22rpx;" src="../../static/image/shoucang.png"
+											mode="widthFix"></image>
+										<text>{{item.favorites}}</text>
+									</view>
+								</view>
+								<view class="content_text">
+									<view v-html="item.title"></view>
+								</view>
+							</view>
+							<view class="name1">
+								<image src="../../static/image/touxiang.png" mode="widthFix"></image>
+								<text class="txt1">妮妮学姐</text>
+								<text class="txt2">{{item.time}}</text>
+							</view>
+						</view>
+					</view>
+					<view class="box-right" v-if="rightList.length>0">
+						<view class="content_body" v-for="(item,i) in rightList" :key="item.id"
+							@click="tiaozhuan(`/subpkg/note-detail/note-detail?noteid=${item.id}&index=${i}&data=rightList`)">
+							<view class="imgs">
+								<image class="imgs1" :src="item.images.length==0?img:item.image"></image>
+								<!-- <image class="imgs2" src="../../static/image/shipin.png"></image> -->
+							</view>
+							<view class="text2">
+								<view class="content_body2">
+									<image style="width: 20rpx;height: 22rpx;" src="../../static/image/dz.png"></image>
+									<text>{{item.likes}}</text>
+									<image style="width: 24rpx;height: 22rpx;" src="../../static/image/xx.png">
+									</image>
+									<text>23.4万</text>
+									<view class="img3">
+										<image style="width: 22rpx;height: 22rpx;" src="../../static/image/shoucang.png"
+											mode="widthFix"></image>
+										<text>{{item.favorites}}</text>
+									</view>
+								</view>
+								<view class="content_text">
+									<view v-html="item.title"></view>
+								</view>
+							</view>
+							<view class="name1">
+								<image src="../../static/image/touxiang.png" mode="widthFix"></image>
+								<text class="txt1">妮妮学姐</text>
+								<text class="txt2">{{item.time}}</text>
+							</view>
+						</view>
+					</view>
+				</view>
+			</scroll-view>
+		</view>
+	</view>
+</template>
+
+<script>
+	export default {
+		data() {
+			return {
+				index: 0,
+				img: 'https://lanhu-dds-backend.oss-cn-beijing.aliyuncs.com/merge_image/imgs/352c6a81da554415a0c9787810050621_mergeImage.png',
+				note: {
+					"title": "",
+					"offset": 0,
+					"step": 10,
+					"sortk": ""
+				},
+				noteList: [],
+				leftList: [],
+				rightList: [],
+			};
+		},
+		methods: {
+			updIndex(index) {
+				this.index = index;
+				let noteArr = [...this.leftList, ...this.rightList].filter(item => !!item); // 合并数组并过滤掉空元素
+				noteArr.sort((a, b) => b.favorites - a.favorites); // 根据收藏数排序
+				let leftarr = [];
+				let rightarr = [];
+				for (let i = 0; i < noteArr.length; i++) {
+				  if (i % 2 == 0) {
+				    leftarr.push(noteArr[i]);
+				  } else {
+				    rightarr.push(noteArr[i]);
+				  }
+				}
+				this.leftList = leftarr;
+				this.rightList = rightarr;
+			},
+			tiaozhuan(url) {
+				uni.navigateTo({
+					url: url
+				})
+			},
+			async queryNoteList() {
+				let {
+					data: res
+				} = await this.$http('/note/v1/list', 'post', this.note);
+				this.noteList = res.data;
+				let leftarr = [];
+				let rightarr = [];
+				for (var i = 0; i < this.noteList.length; i++) {
+					this.noteList[i].time = this.$time(this.noteList[i].createtime);
+					if (this.note.title != "") {
+						if (this.noteList[i].title.indexOf(this.note.title) >= 0) {
+							this.noteList[i].title = this.noteList[i].title.replaceAll(
+								this.note.title,
+								"<font style='color:#00c07f'>" + this.note.title + "</font>"
+							);
+						}
+					}
+					if (this.noteList[i].images.length != 0) {
+						this.noteList[i].images[0] = await this.$imgHandle(this.noteList[i].images[0]);
+					}
+					if (i % 2 == 0) {
+						leftarr.push(this.noteList[i])
+					} else {
+						rightarr.push(this.noteList[i])
+					}
+				}
+				uni.setStorageSync("notelist", this.noteList);
+				this.leftList = leftarr;
+				this.rightList = rightarr;
+				console.log(this.leftList, this.rightList);
+			},
+			search() {
+				let leftarr = [];
+				let rightarr = [];
+				if (this.note.title != "") {
+					this.noteList = uni.getStorageSync("notelist");
+					for (var i = 0; i < this.noteList.length; i++) {
+						if (this.noteList[i].title.indexOf(this.note.title) >= 0) {
+							this.noteList[i].title = this.noteList[i].title.replaceAll(
+								this.note.title,
+								"<font style='color:#00c07f'>" + this.note.title + "</font>"
+							);
+							if (i % 2 == 0) {
+								leftarr.push(this.noteList[i])
+							} else {
+								rightarr.push(this.noteList[i])
+					  }
+						}
+					}
+				} else {
+					this.noteList = uni.getStorageSync("notelist");
+					for (var i = 0; i < this.noteList.length; i++) {
+						if (i % 2 == 0) {
+							leftarr.push(this.noteList[i])
+						} else {
+							rightarr.push(this.noteList[i])
+				 	}
+					}
+				}
+				this.leftList = leftarr;
+				this.rightList = rightarr;
+			},
+			throttle(func, delay) {
+				let timerId;
+				return function(...args) {
+					if (timerId) {
+						clearTimeout(timerId);
+					}
+					timerId = setTimeout(() => {
+						func.apply(this, args);
+					}, delay);
+				};
+			},
+			Back() {
+				uni.navigateBack({
+					delta: 1
+				})
+			},
+		},
+		created() {
+			this.search = this.throttle(this.search, 500);
+		},
+		onLoad() {
+			this.queryNoteList();
+		}
+	}
+</script>
+
+<style lang="scss">
+	.search1 {
+		padding: 60rpx 30rpx 20rpx 30rpx;
+		box-sizing: border-box;
+
+		.box1 {
+			image {
+				height: 1042rpx;
+				position: absolute;
+				left: -296rpx;
+				top: -402rpx;
+				z-index: -999;
+			}
+		}
+
+		.search-header {
+			display: flex;
+			align-items: center;
+
+			image {
+				width: 18rpx;
+				height: 36rpx;
+				margin-right: 34rpx;
+			}
+
+			.search-content1 {
+				width: 644rpx;
+				height: 60rpx;
+				background: rgba(255, 255, 255, 0.48);
+				box-shadow: 0rpx 4rpx 20rpx 14rpx rgba(106, 177, 145, 0.06);
+				border-radius: 40rpx;
+				border: 2rpx solid #FFFFFF;
+				display: flex;
+				align-items: center;
+				padding-left: 38rpx;
+				box-sizing: border-box;
+
+				image {
+					width: 30rpx;
+					height: 26rpx;
+					margin-right: 22rpx;
+				}
+
+				input {
+					width: 536rpx;
+					display: block;
+					font-size: 24rpx;
+				}
+			}
+		}
+
+		.search-select {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-top: 48rpx;
+			padding-right: 12rpx;
+			box-sizing: border-box;
+
+			.text1 {
+				font-size: 24rpx;
+				color: #666;
+				display: block;
+			}
+
+			.hover {
+				font-size: 28rpx;
+				font-weight: bold;
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+
+			.hover::after {
+				content: '';
+				width: 80rpx;
+				height: 8rpx;
+				background: rgba(0, 192, 127, 0.81);
+				border-radius: 2rpx;
+				position: absolute;
+				bottom: 2rpx;
+				z-index: -1;
+			}
+		}
+
+		.search-box1 {
+			display: flex;
+			justify-content: space-between;
+
+			.box-left,
+			.box-right {
+				display: flex;
+				flex-direction: column;
+				width: 336rpx;
+
+				.content_body {
+					position: relative;
+					box-shadow: 0px 4rpx 20rpx 0px rgba(17, 26, 22, 0.06);
+					margin-bottom: 20rpx;
+
+					.imgs {
+						width: 100%;
+						position: relative;
+
+						.imgs1 {
+							width: 100%;
+						}
+
+						.imgs2 {
+							width: 40rpx;
+							position: absolute;
+							top: 15rpx;
+							right: 15rpx;
+						}
+					}
+
+					.text2 {
+						position: absolute;
+						padding: 0rpx 13rpx 0 13rpx;
+						bottom: 70rpx;
+						color: white;
+						width: 100%;
+						box-sizing: border-box;
+
+						.content_body2 {
+							display: flex;
+							align-items: center;
+							font-size: 20rpx;
+							width: 100%;
+							position: relative;
+
+							image {
+								display: block;
+								width: 24rpx;
+								height: 100%;
+							}
+
+							text {
+								margin-right: 17rpx;
+								padding-left: 4rpx;
+							}
+
+							.img3 {
+								display: flex;
+								position: absolute;
+								right: 0rpx;
+
+								text {
+									margin-right: 0rpx;
+								}
+							}
+						}
+
+						.content_text {
+							margin-top: 24rpx;
+
+							view {
+								font-size: 23rpx;
+								color: #333;
+								overflow: hidden;
+								text-overflow: ellipsis;
+								display: -webkit-box;
+								-webkit-box-orient: vertical;
+								-webkit-line-clamp: 1;
+								text-align: justify;
+							}
+						}
+					}
+
+					.name1 {
+						padding: 0rpx 16rpx 0 16rpx;
+						margin-top: 48rpx;
+						margin-bottom: 20rpx;
+						display: flex;
+						align-items: center;
+						position: relative;
+
+						image {
+							width: 36rpx;
+							margin-right: 10rpx;
+						}
+
+						.txt1 {
+							font-size: 21rpx;
+							color: #666;
+						}
+
+						.txt2 {
+							position: absolute;
+							font-size: 17rpx;
+							color: #999;
+							right: 20rpx;
+						}
+					}
+				}
+			}
+		}
+	}
+</style>
